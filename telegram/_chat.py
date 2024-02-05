@@ -477,9 +477,9 @@ class Chat(TelegramObject):
         self.location: Optional[ChatLocation] = location
         self.join_to_send_messages: Optional[bool] = join_to_send_messages
         self.join_by_request: Optional[bool] = join_by_request
-        self.has_restricted_voice_and_video_messages: Optional[
-            bool
-        ] = has_restricted_voice_and_video_messages
+        self.has_restricted_voice_and_video_messages: Optional[bool] = (
+            has_restricted_voice_and_video_messages
+        )
         self.is_forum: Optional[bool] = is_forum
         self.active_usernames: Tuple[str, ...] = parse_sequence_arg(active_usernames)
         self.emoji_status_custom_emoji_id: Optional[str] = emoji_status_custom_emoji_id
@@ -2604,6 +2604,8 @@ class Chat(TelegramObject):
 
         .. seealso:: :meth:`copy_message`, :meth:`send_copy`, :meth:`copy_messages`.
 
+        .. versionadded:: NEXT.VERSION
+
         Returns:
             Tuple[:class:`telegram.MessageId`]: On success, a tuple of :class:`~telegram.MessageId`
             of the sent messages is returned.
@@ -2646,6 +2648,8 @@ class Chat(TelegramObject):
         For the documentation of the arguments, please see :meth:`telegram.Bot.copy_messages`.
 
         .. seealso:: :meth:`copy_message`, :meth:`send_copy`, :meth:`send_copies`.
+
+        .. versionadded:: NEXT.VERSION
 
         Returns:
             Tuple[:class:`telegram.MessageId`]: On success, a tuple of :class:`~telegram.MessageId`

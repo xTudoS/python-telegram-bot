@@ -216,6 +216,13 @@ async def check_shortcut_call(
     if "reply_parameters" in kwargs:
         kwargs["reply_parameters"] = ReplyParameters(message_id=1)
 
+    # We tested this for a long time, but Bot API 7.0 deprecated it in favor of
+    # reply_parameters. In the transition phase, both exist in a mutually exclusive
+    # way. Testing both cases would require a lot of additional code, so we just
+    # ignore this parameter here until it is removed.
+    kwargs.pop("reply_to_message_id", None)
+    expected_args.discard("reply_to_message_id")
+
     async def make_assertion(**kw):
         # name == value makes sure that
         # a) we receive non-None input for all parameters
@@ -556,6 +563,7 @@ async def check_defaults_handling(
     kwargs = {kwarg: "custom_default" for kwarg in inspect.signature(Defaults).parameters}
     kwargs["tzinfo"] = pytz.timezone("America/New_York")
     kwargs.pop("disable_web_page_preview")  # mutually exclusive with link_preview_options
+    kwargs.pop("quote")  # mutually exclusive with do_quote
     kwargs["link_preview_options"] = LinkPreviewOptions(
         url="custom_default", show_above_text="custom_default"
     )

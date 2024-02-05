@@ -61,11 +61,13 @@ class Update(TelegramObject):
         message (:class:`telegram.Message`, optional): New incoming message of any kind - text,
             photo, sticker, etc.
         edited_message (:class:`telegram.Message`, optional): New version of a message that is
-            known to the bot and was edited.
+            known to the bot and was edited. This update may at times be triggered by changes to
+            message fields that are either unavailable or not actively used by your bot.
         channel_post (:class:`telegram.Message`, optional): New incoming channel post of any kind
             - text, photo, sticker, etc.
         edited_channel_post (:class:`telegram.Message`, optional): New version of a channel post
-            that is known to the bot and was edited.
+            that is known to the bot and was edited. This update may at times be triggered by
+            changes to message fields that are either unavailable or not actively used by your bot.
         inline_query (:class:`telegram.InlineQuery`, optional): New incoming inline query.
         chosen_inline_result (:class:`telegram.ChosenInlineResult`, optional): The result of an
             inline query that was chosen by a user and sent to their chat partner.
@@ -75,7 +77,7 @@ class Update(TelegramObject):
         pre_checkout_query (:class:`telegram.PreCheckoutQuery`, optional): New incoming
             pre-checkout query. Contains full information about checkout.
         poll (:class:`telegram.Poll`, optional): New poll state. Bots receive only updates about
-            stopped polls and polls, which are sent by the bot.
+            manually stopped polls and polls, which are sent by the bot.
         poll_answer (:class:`telegram.PollAnswer`, optional): A user changed their answer
             in a non-anonymous poll. Bots receive new votes only in polls that were sent
             by the bot itself.
@@ -142,11 +144,13 @@ class Update(TelegramObject):
         message (:class:`telegram.Message`): Optional. New incoming message of any kind - text,
             photo, sticker, etc.
         edited_message (:class:`telegram.Message`): Optional. New version of a message that is
-            known to the bot and was edited.
+            known to the bot and was edited. This update may at times be triggered by changes to
+            message fields that are either unavailable or not actively used by your bot.
         channel_post (:class:`telegram.Message`): Optional. New incoming channel post of any kind
             - text, photo, sticker, etc.
         edited_channel_post (:class:`telegram.Message`): Optional. New version of a channel post
-            that is known to the bot and was edited.
+            that is known to the bot and was edited. This update may at times be triggered by
+            changes to message fields that are either unavailable or not actively used by your bot.
         inline_query (:class:`telegram.InlineQuery`): Optional. New incoming inline query.
         chosen_inline_result (:class:`telegram.ChosenInlineResult`): Optional. The result of an
             inline query that was chosen by a user and sent to their chat partner.
@@ -159,7 +163,7 @@ class Update(TelegramObject):
         pre_checkout_query (:class:`telegram.PreCheckoutQuery`): Optional. New incoming
             pre-checkout query. Contains full information about checkout.
         poll (:class:`telegram.Poll`): Optional. New poll state. Bots receive only updates about
-            stopped polls and polls, which are sent by the bot.
+            manually stopped polls and polls, which are sent by the bot.
         poll_answer (:class:`telegram.PollAnswer`): Optional. A user changed their answer
             in a non-anonymous poll. Bots receive new votes only in polls that were sent
             by the bot itself.
@@ -218,28 +222,28 @@ class Update(TelegramObject):
     """
 
     __slots__ = (
-        "callback_query",
-        "chosen_inline_result",
-        "pre_checkout_query",
-        "inline_query",
-        "update_id",
-        "message",
-        "shipping_query",
-        "poll",
-        "poll_answer",
-        "channel_post",
-        "edited_channel_post",
-        "edited_message",
-        "_effective_user",
         "_effective_chat",
         "_effective_message",
-        "my_chat_member",
-        "chat_member",
-        "chat_join_request",
+        "_effective_user",
+        "callback_query",
+        "channel_post",
         "chat_boost",
-        "removed_chat_boost",
+        "chat_join_request",
+        "chat_member",
+        "chosen_inline_result",
+        "edited_channel_post",
+        "edited_message",
+        "inline_query",
+        "message",
         "message_reaction",
         "message_reaction_count",
+        "my_chat_member",
+        "poll",
+        "poll_answer",
+        "pre_checkout_query",
+        "removed_chat_boost",
+        "shipping_query",
+        "update_id",
     )
 
     MESSAGE: Final[str] = constants.UpdateType.MESSAGE

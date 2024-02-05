@@ -124,6 +124,8 @@ class MaybeInaccessibleMessage(TelegramObject):
     Objects of this class are comparable in terms of equality. Two objects of this class are
     considered equal, if their :attr:`message_id` and :attr:`chat` are equal
 
+    .. versionadded:: NEXT.VERSION
+
     Args:
         message_id (:obj:`int`): Unique message identifier.
         date (:class:`datetime.datetime`): Date the message was sent in Unix time or 0 in Unix
@@ -141,7 +143,7 @@ class MaybeInaccessibleMessage(TelegramObject):
         chat (:class:`telegram.Chat`): Conversation the message belongs to.
     """
 
-    __slots__ = ("chat", "message_id", "date")
+    __slots__ = ("chat", "date", "message_id")
 
     def __init__(
         self,
@@ -248,6 +250,8 @@ class InaccessibleMessage(MaybeInaccessibleMessage):
 
     Objects of this class are comparable in terms of equality. Two objects of this class are
     considered equal, if their :attr:`message_id` and :attr:`chat` are equal
+
+    .. versionadded:: NEXT.VERSION
 
     Args:
         message_id (:obj:`int`): Unique message identifier.
@@ -872,12 +876,13 @@ class Message(MaybeInaccessibleMessage):
 
             .. versionadded:: NEXT.VERSION
 
-    .. |custom_emoji_formatting_note| replace:: Custom emoji entities will be ignored by this
-        function. Instead, the supplied replacement for the emoji will be used.
-
     .. |custom_emoji_no_md1_support| replace:: Since custom emoji entities are not supported by
        :attr:`~telegram.constants.ParseMode.MARKDOWN`, this method now raises a
        :exc:`ValueError` when encountering a custom emoji.
+
+    .. |blockquote_no_md1_support| replace:: Since block quotation entities are not supported
+       by :attr:`~telegram.constants.ParseMode.MARKDOWN`, this method now raises a
+       :exc:`ValueError` when encountering a block quotation.
     """
 
     # fmt: on
@@ -1000,8 +1005,6 @@ class Message(MaybeInaccessibleMessage):
         channel_chat_created: Optional[bool] = None,
         migrate_to_chat_id: Optional[int] = None,
         migrate_from_chat_id: Optional[int] = None,
-        # TODO changing this results in a couple mypy errors. Not touching them till we decide
-        # on how to continue with this
         pinned_message: Optional[MaybeInaccessibleMessage] = None,
         invoice: Optional[Invoice] = None,
         successful_payment: Optional[SuccessfulPayment] = None,
@@ -1136,9 +1139,9 @@ class Message(MaybeInaccessibleMessage):
             self.migrate_to_chat_id: Optional[int] = migrate_to_chat_id
             self.migrate_from_chat_id: Optional[int] = migrate_from_chat_id
             self.channel_chat_created: Optional[bool] = bool(channel_chat_created)
-            self.message_auto_delete_timer_changed: Optional[
-                MessageAutoDeleteTimerChanged
-            ] = message_auto_delete_timer_changed
+            self.message_auto_delete_timer_changed: Optional[MessageAutoDeleteTimerChanged] = (
+                message_auto_delete_timer_changed
+            )
             self.pinned_message: Optional[MaybeInaccessibleMessage] = pinned_message
             self._forward_from_message_id: Optional[int] = forward_from_message_id
             self.invoice: Optional[Invoice] = invoice
@@ -1153,15 +1156,15 @@ class Message(MaybeInaccessibleMessage):
             self.poll: Optional[Poll] = poll
             self.dice: Optional[Dice] = dice
             self.via_bot: Optional[User] = via_bot
-            self.proximity_alert_triggered: Optional[
-                ProximityAlertTriggered
-            ] = proximity_alert_triggered
+            self.proximity_alert_triggered: Optional[ProximityAlertTriggered] = (
+                proximity_alert_triggered
+            )
             self.video_chat_scheduled: Optional[VideoChatScheduled] = video_chat_scheduled
             self.video_chat_started: Optional[VideoChatStarted] = video_chat_started
             self.video_chat_ended: Optional[VideoChatEnded] = video_chat_ended
-            self.video_chat_participants_invited: Optional[
-                VideoChatParticipantsInvited
-            ] = video_chat_participants_invited
+            self.video_chat_participants_invited: Optional[VideoChatParticipantsInvited] = (
+                video_chat_participants_invited
+            )
             self.reply_markup: Optional[InlineKeyboardMarkup] = reply_markup
             self.web_app_data: Optional[WebAppData] = web_app_data
             self.is_topic_message: Optional[bool] = is_topic_message
@@ -1170,12 +1173,12 @@ class Message(MaybeInaccessibleMessage):
             self.forum_topic_closed: Optional[ForumTopicClosed] = forum_topic_closed
             self.forum_topic_reopened: Optional[ForumTopicReopened] = forum_topic_reopened
             self.forum_topic_edited: Optional[ForumTopicEdited] = forum_topic_edited
-            self.general_forum_topic_hidden: Optional[
-                GeneralForumTopicHidden
-            ] = general_forum_topic_hidden
-            self.general_forum_topic_unhidden: Optional[
-                GeneralForumTopicUnhidden
-            ] = general_forum_topic_unhidden
+            self.general_forum_topic_hidden: Optional[GeneralForumTopicHidden] = (
+                general_forum_topic_hidden
+            )
+            self.general_forum_topic_unhidden: Optional[GeneralForumTopicUnhidden] = (
+                general_forum_topic_unhidden
+            )
             self.write_access_allowed: Optional[WriteAccessAllowed] = write_access_allowed
             self.has_media_spoiler: Optional[bool] = has_media_spoiler
             self._user_shared: Optional[UserShared] = user_shared
@@ -1555,27 +1558,79 @@ class Message(MaybeInaccessibleMessage):
 
     def compute_quote_position_and_entities(
         self, quote: str, index: Optional[int] = None
-    ) -> Tuple[int, Tuple[MessageEntity, ...]]:
+    ) -> Tuple[int, Optional[Tuple[MessageEntity, ...]]]:
+        """
+        Use this function to compute position and entities of a quote in the message text or
+        caption. Useful for filling the parameters
+        :paramref:`~telegram.ReplyParameters.quote_position` and
+        :paramref:`~telegram.ReplyParameters.quote_entities` of :class:`telegram.ReplyParameters`
+        when replying to a message.
+
+        Example:
+
+            Given a message with the text ``"Hello, world! Hello, world!"``, the following code
+            will return the position and entities of the second occurrence of ``"Hello, world!"``.
+
+            .. code-block:: python
+
+                message.compute_quote_position_and_entities("Hello, world!", 1)
+
+        .. versionadded:: NEXT.VERSION
+
+        Args:
+            quote (:obj:`str`): Part of the message which is to be quoted. This is
+                expected to have plain text without formatting entities.
+            index (:obj:`int`, optional): 0-based index of the occurrence of the quote in the
+                message. If not specified, the first occurrence is used.
+
+        Returns:
+            Tuple[:obj:`int`, :obj:`None` | Tuple[:class:`~telegram.MessageEntity`, ...]]: On
+            success, a tuple containing information about quote position and entities is returned.
+
+        Raises:
+            RuntimeError: If the message has neither :attr:`text` nor :attr:`caption`.
+            ValueError: If the requested index of quote doesn't exist in the message.
+        """
         if not (text := (self.text or self.caption)):
             raise RuntimeError("This message has neither text nor caption.")
 
-        effective_index = 0 or index
+        # Telegram wants the position in UTF-16 code units, so we have to calculate in that space
+        utf16_text = text.encode("utf-16-le")
+        utf16_quote = quote.encode("utf-16-le")
+        effective_index = index or 0
 
-        matches = list(re.finditer(re.escape(quote), text))
-        if (length := len(matches)) < effective_index:
+        matches = list(re.finditer(re.escape(utf16_quote), utf16_text))
+        if (length := len(matches)) < effective_index + 1:
             raise ValueError(
-                f"You requested the {index}-nth occurrence of '{quote}', but this text appears "
+                f"You requested the {index}-th occurrence of '{quote}', but this text appears "
                 f"only {length} times."
             )
-        # apply utf-16 conversion
-        position = matches[index].start()
-        end_position = position + len(quote)
-        entities = tuple(
-            entity
-            for entity in self.entities or self.caption_entities
-            if position <= entity.offset <= end_position
-        )
-        return position, entities
+
+        position = len(utf16_text[: matches[effective_index].start()]) // 2
+        length = len(utf16_quote) // 2
+        end_position = position + length
+
+        entities = []
+        for entity in self.entities or self.caption_entities:
+            if position <= entity.offset + entity.length and entity.offset <= end_position:
+                # shift the offset by the position of the quote
+                offset = max(0, entity.offset - position)
+                # trim the entity length to the length of the overlap with the quote
+                e_length = min(end_position, entity.offset + entity.length) - max(
+                    position, entity.offset
+                )
+                if e_length <= 0:
+                    continue
+
+                # create a new entity with the correct offset and length
+                # looping over slots rather manually accessing the attributes
+                # is more future-proof
+                kwargs = {attr: getattr(entity, attr) for attr in entity.__slots__}
+                kwargs["offset"] = offset
+                kwargs["length"] = e_length
+                entities.append(MessageEntity(**kwargs))
+
+        return position, tuple(entities) or None
 
     def build_reply_arguments(
         self,
@@ -1586,30 +1641,60 @@ class Message(MaybeInaccessibleMessage):
         message_thread_id: Optional[int] = None,
     ) -> _ReplyKwargs:
         """
-        Use this function to build ``reply_paramters`` for ``telegram.Message.reply_*`` methods.
+        Builds a dictionary with the keys ``chat_id`` and ``reply_parameters``. This dictionary can
+        be used to reply to a message with the given quote and target chat.
 
-            .. versionadded:: NEXT.VERSION
+        Examples:
+
+            Usage with :meth:`telegram.Bot.send_message`:
+
+            .. code-block:: python
+
+                await bot.send_message(
+                    text="This is a reply",
+                    **message.build_reply_arguments(quote="Quoted Text")
+                )
+
+            Usage with :meth:`reply_text`, replying in the same chat:
+
+            .. code-block:: python
+
+                await message.reply_text(
+                    "This is a reply",
+                    do_quote=message.build_reply_arguments(quote="Quoted Text")
+                )
+
+            Usage with :meth:`reply_text`, replying in a different chat:
+
+            .. code-block:: python
+
+                await message.reply_text(
+                    "This is a reply",
+                    do_quote=message.build_reply_arguments(
+                        quote="Quoted Text",
+                        target_chat_id=-100123456789
+                    )
+                )
+
+        .. versionadded:: NEXT.VERSION
 
         Args:
-            quote (:obj:`str`, optional): Quoted part of the message to be replied to; 0-1024
-                characters after entities parsing. The quote must be an exact substring of the
-                message to be replied to, including bold, italic, underline, strikethrough,
-                spoiler, and custom_emoji entities. The message will fail to send if the quote
-                isn't found in the original message.
-            quote_index (:obj:`int`, optional): Position of the quote in the original message in
-                UTF-16 code units.
-            target_chat_id (:obj:`int` | :obj:`str`, optional): If the message to be replied to is
-                from a different chat, |chat_id_channel|
+            quote (:obj:`str`, optional): Passed in :meth:`compute_quote_position_and_entities`
+                as parameter :paramref:`~compute_quote_position_and_entities.quote` to compute
+                quote entities. Defaults to :obj:`None`.
+            quote_index (:obj:`int`, optional): Passed in
+                :meth:`compute_quote_position_and_entities` as parameter
+                :paramref:`~compute_quote_position_and_entities.quote_index` to compute quote
+                position. Defaults to :obj:`None`.
+            target_chat_id (:obj:`int` | :obj:`str`, optional): |chat_id_channel|
+                Defaults to :attr:`chat_id`.
             allow_sending_without_reply (:obj:`bool`, optional): |allow_sending_without_reply|
+                Will be applied only if the reply happens in the same chat and forum topic.
             message_thread_id (:obj:`int`, optional): |message_thread_id|
 
         Returns:
-            :obj:`dict`: On success, a dict containing information about ``reply_parameters`` is
-            returned.
+            :obj:`dict`:
         """
-        kwargs: _ReplyKwargs = {
-            "chat_id": target_chat_id or self.chat_id
-        }  # type: ignore [typeddict-item]
         target_chat_is_self = target_chat_id in (None, self.chat_id, f"@{self.chat.username}")
 
         if target_chat_is_self and message_thread_id in (
@@ -1624,15 +1709,17 @@ class Message(MaybeInaccessibleMessage):
         quote_position, quote_entities = (
             self.compute_quote_position_and_entities(quote, quote_index) if quote else (None, None)
         )
-        kwargs["reply_parameters"] = ReplyParameters(
-            chat_id=None if target_chat_is_self else self.chat_id,
-            message_id=self.message_id,
-            quote_position=quote_position,
-            quote_entities=quote_entities,
-            allow_sending_without_reply=effective_aswr,
-        )
-
-        return kwargs
+        return {  # type: ignore[typeddict-item]
+            "reply_parameters": ReplyParameters(
+                chat_id=None if target_chat_is_self else self.chat_id,
+                message_id=self.message_id,
+                quote=quote,
+                quote_position=quote_position,
+                quote_entities=quote_entities,
+                allow_sending_without_reply=effective_aswr,
+            ),
+            "chat_id": target_chat_id or self.chat_id,
+        }
 
     async def _parse_quote_arguments(
         self,
@@ -1642,24 +1729,36 @@ class Message(MaybeInaccessibleMessage):
         reply_parameters: Optional["ReplyParameters"],
     ) -> Tuple[Union[str, int], ReplyParameters]:
         if quote and do_quote:
-            raise ValueError("Mutually exclusive")
+            raise ValueError("The arguments `quote` and `do_quote` are mutually exclusive")
 
-        if reply_parameters:
-            return reply_parameters.chat_id, reply_parameters
+        if reply_to_message_id is not None and reply_parameters is not None:
+            raise ValueError(
+                "`reply_to_message_id` and `reply_parameters` are mutually exclusive."
+            )
+
+        if quote is not None:
+            warn(
+                "The `quote` parameter is deprecated in favor of the `do_quote` parameter. Please "
+                "update your code to use `do_quote` instead.",
+                PTBDeprecationWarning,
+                stacklevel=2,
+            )
 
         effective_do_quote = quote or do_quote
-        bool_do_quote = not isinstance(reply_parameters, ReplyParameters)
-        reply_parameters = (
-            self._quote(quote, reply_to_message_id)
-            if bool_do_quote
-            else effective_do_quote["reply_parameters"]  # type: ignore [index]
-        )
-        chat_id = (
-            self.chat_id
-            if bool_do_quote
-            else effective_do_quote["chat_id"]  # type: ignore [index]
-        )
-        return chat_id, reply_parameters
+        chat_id: Union[str, int] = self.chat_id
+
+        # reply_parameters and reply_to_message_id overrule the do_quote parameter
+        if reply_parameters is not None:
+            effective_reply_parameters = reply_parameters
+        elif reply_to_message_id is not None:
+            effective_reply_parameters = ReplyParameters(message_id=reply_to_message_id)
+        elif isinstance(effective_do_quote, dict):
+            effective_reply_parameters = effective_do_quote["reply_parameters"]
+            chat_id = effective_do_quote["chat_id"]
+        else:
+            effective_reply_parameters = self._quote(effective_do_quote)
+
+        return chat_id, effective_reply_parameters
 
     async def reply_text(
         self,
@@ -1692,6 +1791,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -1765,6 +1867,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -1833,6 +1938,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -1901,6 +2009,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -1963,6 +2074,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2027,6 +2141,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2095,6 +2212,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2164,6 +2284,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2234,6 +2357,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2299,6 +2425,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2365,6 +2494,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2434,6 +2566,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2498,6 +2633,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2564,6 +2702,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2633,6 +2774,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2700,6 +2844,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2770,6 +2917,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2836,6 +2986,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -2925,6 +3078,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -3014,6 +3170,9 @@ class Message(MaybeInaccessibleMessage):
 
         Keyword Args:
             quote (:obj:`bool`, optional): |reply_quote|
+
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -3207,6 +3366,8 @@ class Message(MaybeInaccessibleMessage):
             quote (:obj:`bool`, optional): |reply_quote|
 
                 .. versionadded:: 13.1
+                .. deprecated:: NEXT.VERSION
+                    This argument is deprecated in favor of :paramref:`do_quote`
             do_quote (:obj:`bool` | :obj:`dict`, optional): |do_quote|
                 Mutually exclusive with :paramref:`quote`.
 
@@ -4052,8 +4213,9 @@ class Message(MaybeInaccessibleMessage):
             if entity.type in types
         }
 
-    @staticmethod
+    @classmethod
     def _parse_html(
+        cls,
         message_text: Optional[str],
         entities: Dict[MessageEntity, str],
         urled: bool = False,
@@ -4062,8 +4224,7 @@ class Message(MaybeInaccessibleMessage):
         if message_text is None:
             return None
 
-        message_text = message_text.encode("utf-16-le")  # type: ignore
-
+        utf_16_text = message_text.encode("utf-16-le")
         html_text = ""
         last_offset = 0
 
@@ -4071,81 +4232,69 @@ class Message(MaybeInaccessibleMessage):
         parsed_entities = []
 
         for entity, text in sorted_entities:
-            if entity not in parsed_entities:
-                nested_entities = {
-                    e: t
-                    for (e, t) in sorted_entities
-                    if e.offset >= entity.offset
-                    and e.offset + e.length <= entity.offset + entity.length
-                    and e != entity
-                }
-                parsed_entities.extend(list(nested_entities.keys()))
+            if entity in parsed_entities:
+                continue
 
-                orig_text = text
+            nested_entities = {
+                e: t
+                for (e, t) in sorted_entities
+                if e.offset >= entity.offset
+                and e.offset + e.length <= entity.offset + entity.length
+                and e != entity
+            }
+            parsed_entities.extend(list(nested_entities.keys()))
+
+            if nested_entities:
+                escaped_text = cls._parse_html(
+                    text, nested_entities, urled=urled, offset=entity.offset
+                )
+            else:
                 escaped_text = escape(text)
 
-                if nested_entities:
-                    escaped_text = Message._parse_html(
-                        orig_text, nested_entities, urled=urled, offset=entity.offset
-                    )
-
-                if entity.type == MessageEntity.TEXT_LINK:
-                    insert = f'<a href="{entity.url}">{escaped_text}</a>'
-                elif entity.type == MessageEntity.TEXT_MENTION and entity.user:
-                    insert = f'<a href="tg://user?id={entity.user.id}">{escaped_text}</a>'
-                elif entity.type == MessageEntity.URL and urled:
-                    insert = f'<a href="{escaped_text}">{escaped_text}</a>'
-                elif entity.type == MessageEntity.BOLD:
-                    insert = f"<b>{escaped_text}</b>"
-                elif entity.type == MessageEntity.ITALIC:
-                    insert = f"<i>{escaped_text}</i>"
-                elif entity.type == MessageEntity.CODE:
-                    insert = f"<code>{escaped_text}</code>"
-                elif entity.type == MessageEntity.PRE:
-                    if entity.language:
-                        insert = (
-                            f'<pre><code class="{entity.language}">{escaped_text}</code></pre>'
-                        )
-                    else:
-                        insert = f"<pre>{escaped_text}</pre>"
-                elif entity.type == MessageEntity.UNDERLINE:
-                    insert = f"<u>{escaped_text}</u>"
-                elif entity.type == MessageEntity.STRIKETHROUGH:
-                    insert = f"<s>{escaped_text}</s>"
-                elif entity.type == MessageEntity.SPOILER:
-                    insert = f'<span class="tg-spoiler">{escaped_text}</span>'
-                elif entity.type == MessageEntity.CUSTOM_EMOJI:
-                    insert = (
-                        f'<tg-emoji emoji-id="{entity.custom_emoji_id}">{escaped_text}</tg-emoji>'
-                    )
+            if entity.type == MessageEntity.TEXT_LINK:
+                insert = f'<a href="{entity.url}">{escaped_text}</a>'
+            elif entity.type == MessageEntity.TEXT_MENTION and entity.user:
+                insert = f'<a href="tg://user?id={entity.user.id}">{escaped_text}</a>'
+            elif entity.type == MessageEntity.URL and urled:
+                insert = f'<a href="{escaped_text}">{escaped_text}</a>'
+            elif entity.type == MessageEntity.BLOCKQUOTE:
+                insert = f"<blockquote>{escaped_text}</blockquote>"
+            elif entity.type == MessageEntity.BOLD:
+                insert = f"<b>{escaped_text}</b>"
+            elif entity.type == MessageEntity.ITALIC:
+                insert = f"<i>{escaped_text}</i>"
+            elif entity.type == MessageEntity.CODE:
+                insert = f"<code>{escaped_text}</code>"
+            elif entity.type == MessageEntity.PRE:
+                if entity.language:
+                    insert = f'<pre><code class="{entity.language}">{escaped_text}</code></pre>'
                 else:
-                    insert = escaped_text
+                    insert = f"<pre>{escaped_text}</pre>"
+            elif entity.type == MessageEntity.UNDERLINE:
+                insert = f"<u>{escaped_text}</u>"
+            elif entity.type == MessageEntity.STRIKETHROUGH:
+                insert = f"<s>{escaped_text}</s>"
+            elif entity.type == MessageEntity.SPOILER:
+                insert = f'<span class="tg-spoiler">{escaped_text}</span>'
+            elif entity.type == MessageEntity.CUSTOM_EMOJI:
+                insert = f'<tg-emoji emoji-id="{entity.custom_emoji_id}">{escaped_text}</tg-emoji>'
+            else:
+                insert = escaped_text
 
-                if offset == 0:
-                    html_text += (
-                        escape(
-                            message_text[  # type: ignore
-                                last_offset * 2 : (entity.offset - offset) * 2
-                            ].decode("utf-16-le")
-                        )
-                        + insert
-                    )
-                else:
-                    html_text += (
-                        message_text[  # type: ignore
-                            last_offset * 2 : (entity.offset - offset) * 2
-                        ].decode("utf-16-le")
-                        + insert
-                    )
-
-                last_offset = entity.offset - offset + entity.length
-
-        if offset == 0:
-            html_text += escape(
-                message_text[last_offset * 2 :].decode("utf-16-le")  # type: ignore
+            # Make sure to escape the text that is not part of the entity
+            # if we're in a nested entity, this is still required, since in that case this
+            # text is part of the parent entity
+            html_text += (
+                escape(
+                    utf_16_text[last_offset * 2 : (entity.offset - offset) * 2].decode("utf-16-le")
+                )
+                + insert
             )
-        else:
-            html_text += message_text[last_offset * 2 :].decode("utf-16-le")  # type: ignore
+
+            last_offset = entity.offset - offset + entity.length
+
+        # see comment above
+        html_text += escape(utf_16_text[last_offset * 2 :].decode("utf-16-le"))
 
         return html_text
 
@@ -4156,11 +4305,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as HTML in
         the same way the original message was formatted.
 
+        Warning:
+            |text_html|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as HTML.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message text with entities formatted as HTML.
@@ -4175,11 +4330,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as HTML.
         This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
+        Warning:
+            |text_html|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as HTML.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message text with entities formatted as HTML.
@@ -4195,11 +4356,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         HTML in the same way the original message was formatted.
 
+        Warning:
+            |text_html|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as HTML.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message caption with caption entities formatted as HTML.
@@ -4214,32 +4381,48 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         HTML. This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
+        Warning:
+            |text_html|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as HTML.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
 
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
+
         Returns:
             :obj:`str`: Message caption with caption entities formatted as HTML.
         """
         return self._parse_html(self.caption, self.parse_caption_entities(), urled=True)
 
-    @staticmethod
+    @classmethod
     def _parse_markdown(
+        cls,
         message_text: Optional[str],
         entities: Dict[MessageEntity, str],
         urled: bool = False,
         version: MarkdownVersion = 1,
         offset: int = 0,
     ) -> Optional[str]:
-        version = int(version)  # type: ignore
+        if version == 1:
+            for entity_type in (
+                MessageEntity.UNDERLINE,
+                MessageEntity.STRIKETHROUGH,
+                MessageEntity.SPOILER,
+                MessageEntity.BLOCKQUOTE,
+                MessageEntity.CUSTOM_EMOJI,
+            ):
+                if any(entity.type == entity_type for entity in entities):
+                    name = entity_type.name.title().replace("_", " ")  # type:ignore[attr-defined]
+                    raise ValueError(f"{name} entities are not supported for Markdown version 1")
 
         if message_text is None:
             return None
 
-        message_text = message_text.encode("utf-16-le")  # type: ignore
-
+        utf_16_text = message_text.encode("utf-16-le")
         markdown_text = ""
         last_offset = 0
 
@@ -4247,125 +4430,103 @@ class Message(MaybeInaccessibleMessage):
         parsed_entities = []
 
         for entity, text in sorted_entities:
-            if entity not in parsed_entities:
-                nested_entities = {
-                    e: t
-                    for (e, t) in sorted_entities
-                    if e.offset >= entity.offset
-                    and e.offset + e.length <= entity.offset + entity.length
-                    and e != entity
-                }
-                parsed_entities.extend(list(nested_entities.keys()))
+            if entity in parsed_entities:
+                continue
 
+            nested_entities = {
+                e: t
+                for (e, t) in sorted_entities
+                if e.offset >= entity.offset
+                and e.offset + e.length <= entity.offset + entity.length
+                and e != entity
+            }
+            parsed_entities.extend(list(nested_entities.keys()))
+
+            if nested_entities:
+                if version < 2:
+                    raise ValueError("Nested entities are not supported for Markdown version 1")
+
+                escaped_text = cls._parse_markdown(
+                    text,
+                    nested_entities,
+                    urled=urled,
+                    offset=entity.offset,
+                    version=version,
+                )
+            else:
                 escaped_text = escape_markdown(text, version=version)
 
-                if nested_entities:
-                    if version < 2:
-                        raise ValueError(
-                            "Nested entities are not supported for Markdown version 1"
-                        )
-
-                    escaped_text = Message._parse_markdown(
-                        text,
-                        nested_entities,
-                        urled=urled,
-                        offset=entity.offset,
-                        version=version,
-                    )
-
-                if entity.type == MessageEntity.TEXT_LINK:
-                    if version == 1:
-                        url = entity.url
-                    else:
-                        # Links need special escaping. Also can't have entities nested within
-                        url = escape_markdown(
-                            entity.url, version=version, entity_type=MessageEntity.TEXT_LINK
-                        )
-                    insert = f"[{escaped_text}]({url})"
-                elif entity.type == MessageEntity.TEXT_MENTION and entity.user:
-                    insert = f"[{escaped_text}](tg://user?id={entity.user.id})"
-                elif entity.type == MessageEntity.URL and urled:
-                    link = text if version == 1 else escaped_text
-                    insert = f"[{link}]({text})"
-                elif entity.type == MessageEntity.BOLD:
-                    insert = f"*{escaped_text}*"
-                elif entity.type == MessageEntity.ITALIC:
-                    insert = f"_{escaped_text}_"
-                elif entity.type == MessageEntity.CODE:
-                    # Monospace needs special escaping. Also can't have entities nested within
-                    insert = f"`{escape_markdown(text, version, MessageEntity.CODE)}`"
-
-                elif entity.type == MessageEntity.PRE:
-                    # Monospace needs special escaping. Also can't have entities nested within
-                    code = escape_markdown(text, version=version, entity_type=MessageEntity.PRE)
-                    if entity.language:
-                        prefix = f"```{entity.language}\n"
-                    elif code.startswith("\\"):
-                        prefix = "```"
-                    else:
-                        prefix = "```\n"
-                    insert = f"{prefix}{code}```"
-                elif entity.type == MessageEntity.UNDERLINE:
-                    if version == 1:
-                        raise ValueError(
-                            "Underline entities are not supported for Markdown version 1"
-                        )
-                    insert = f"__{escaped_text}__"
-                elif entity.type == MessageEntity.STRIKETHROUGH:
-                    if version == 1:
-                        raise ValueError(
-                            "Strikethrough entities are not supported for Markdown version 1"
-                        )
-                    insert = f"~{escaped_text}~"
-                elif entity.type == MessageEntity.SPOILER:
-                    if version == 1:
-                        raise ValueError(
-                            "Spoiler entities are not supported for Markdown version 1"
-                        )
-                    insert = f"||{escaped_text}||"
-                elif entity.type == MessageEntity.CUSTOM_EMOJI:
-                    if version == 1:
-                        raise ValueError(
-                            "Custom emoji entities are not supported for Markdown version 1"
-                        )
-                    # This should never be needed because ids are numeric but the documentation
-                    # specifically mentions it so here we are
-                    custom_emoji_id = escape_markdown(
-                        entity.custom_emoji_id,
-                        version=version,
-                        entity_type=MessageEntity.CUSTOM_EMOJI,
-                    )
-                    insert = f"![{escaped_text}](tg://emoji?id={custom_emoji_id})"
+            if entity.type == MessageEntity.TEXT_LINK:
+                if version == 1:
+                    url = entity.url
                 else:
-                    insert = escaped_text
-
-                if offset == 0:
-                    markdown_text += (
-                        escape_markdown(
-                            message_text[  # type: ignore
-                                last_offset * 2 : (entity.offset - offset) * 2
-                            ].decode("utf-16-le"),
-                            version=version,
-                        )
-                        + insert
+                    # Links need special escaping. Also can't have entities nested within
+                    url = escape_markdown(
+                        entity.url, version=version, entity_type=MessageEntity.TEXT_LINK
                     )
+                insert = f"[{escaped_text}]({url})"
+            elif entity.type == MessageEntity.TEXT_MENTION and entity.user:
+                insert = f"[{escaped_text}](tg://user?id={entity.user.id})"
+            elif entity.type == MessageEntity.URL and urled:
+                link = text if version == 1 else escaped_text
+                insert = f"[{link}]({text})"
+            elif entity.type == MessageEntity.BOLD:
+                insert = f"*{escaped_text}*"
+            elif entity.type == MessageEntity.ITALIC:
+                insert = f"_{escaped_text}_"
+            elif entity.type == MessageEntity.CODE:
+                # Monospace needs special escaping. Also can't have entities nested within
+                insert = f"`{escape_markdown(text, version, MessageEntity.CODE)}`"
+            elif entity.type == MessageEntity.PRE:
+                # Monospace needs special escaping. Also can't have entities nested within
+                code = escape_markdown(text, version=version, entity_type=MessageEntity.PRE)
+                if entity.language:
+                    prefix = f"```{entity.language}\n"
+                elif code.startswith("\\"):
+                    prefix = "```"
                 else:
-                    markdown_text += (
-                        message_text[  # type: ignore
-                            last_offset * 2 : (entity.offset - offset) * 2
-                        ].decode("utf-16-le")
-                        + insert
-                    )
+                    prefix = "```\n"
+                insert = f"{prefix}{code}```"
+            elif entity.type == MessageEntity.UNDERLINE:
+                insert = f"__{escaped_text}__"
+            elif entity.type == MessageEntity.STRIKETHROUGH:
+                insert = f"~{escaped_text}~"
+            elif entity.type == MessageEntity.SPOILER:
+                insert = f"||{escaped_text}||"
+            elif entity.type == MessageEntity.BLOCKQUOTE:
+                insert = ">" + "\n>".join(escaped_text.splitlines())
+            elif entity.type == MessageEntity.CUSTOM_EMOJI:
+                # This should never be needed because ids are numeric but the documentation
+                # specifically mentions it so here we are
+                custom_emoji_id = escape_markdown(
+                    entity.custom_emoji_id,
+                    version=version,
+                    entity_type=MessageEntity.CUSTOM_EMOJI,
+                )
+                insert = f"![{escaped_text}](tg://emoji?id={custom_emoji_id})"
+            else:
+                insert = escaped_text
 
-                last_offset = entity.offset - offset + entity.length
-
-        if offset == 0:
-            markdown_text += escape_markdown(
-                message_text[last_offset * 2 :].decode("utf-16-le"),  # type: ignore
-                version=version,
+            # Make sure to escape the text that is not part of the entity
+            # if we're in a nested entity, this is still required, since in that case this
+            # text is part of the parent entity
+            markdown_text += (
+                escape_markdown(
+                    utf_16_text[last_offset * 2 : (entity.offset - offset) * 2].decode(
+                        "utf-16-le"
+                    ),
+                    version=version,
+                )
+                + insert
             )
-        else:
-            markdown_text += message_text[last_offset * 2 :].decode("utf-16-le")  # type: ignore
+
+            last_offset = entity.offset - offset + entity.length
+
+        # see comment above
+        markdown_text += escape_markdown(
+            utf_16_text[last_offset * 2 :].decode("utf-16-le"),
+            version=version,
+        )
 
         return markdown_text
 
@@ -4377,22 +4538,25 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as Markdown
         in the same way the original message was formatted.
 
-        Note:
-            * :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
-              Telegram for backward compatibility. You should use
-              :meth:`text_markdown_v2` instead.
+        Warning:
+            |text_markdown|
 
-            * |custom_emoji_formatting_note|
+        Note:
+            :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
+            Telegram for backward compatibility. You should use :meth:`text_markdown_v2` instead.
 
         .. versionchanged:: 20.5
             |custom_emoji_no_md1_support|
+
+        .. versionchanged:: NEXT.VERSION
+            |blockquote_no_md1_support|
 
         Returns:
             :obj:`str`: Message text with entities formatted as Markdown.
 
         Raises:
-            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler or nested
-                entities.
+            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler,
+                blockquote or nested entities.
 
         """
         return self._parse_markdown(self.text, self.parse_entities(), urled=False)
@@ -4405,11 +4569,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as Markdown
         in the same way the original message was formatted.
 
+        Warning:
+            |text_markdown|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as Markdown V2.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message text with entities formatted as Markdown.
@@ -4424,22 +4594,26 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as Markdown.
         This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
-        Note:
-            * :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
-              Telegram for backward compatibility. You should use :meth:`text_markdown_v2_urled`
-              instead.
+        Warning:
+            |text_markdown|
 
-            * |custom_emoji_formatting_note|
+        Note:
+            :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
+            Telegram for backward compatibility. You should use :meth:`text_markdown_v2_urled`
+            instead.
 
         .. versionchanged:: 20.5
             |custom_emoji_no_md1_support|
+
+        .. versionchanged:: NEXT.VERSION
+            |blockquote_no_md1_support|
 
         Returns:
             :obj:`str`: Message text with entities formatted as Markdown.
 
         Raises:
-            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler or nested
-                entities.
+            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler,
+                blockquote or nested entities.
 
         """
         return self._parse_markdown(self.text, self.parse_entities(), urled=True)
@@ -4452,11 +4626,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message text with the entities formatted as Markdown.
         This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
+        Warning:
+            |text_markdown|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as Markdown V2.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message text with entities formatted as Markdown.
@@ -4471,22 +4651,24 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         Markdown in the same way the original message was formatted.
 
+        Warning:
+            |text_markdown|
+
         Note:
-            * :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
-              Telegram for backward compatibility. You should use :meth:`caption_markdown_v2`
-              instead.
-
-            * |custom_emoji_formatting_note|
-
+            :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
+            Telegram for backward compatibility. You should use :meth:`caption_markdown_v2`
         .. versionchanged:: 20.5
             |custom_emoji_no_md1_support|
+
+        .. versionchanged:: NEXT.VERSION
+            |blockquote_no_md1_support|
 
         Returns:
             :obj:`str`: Message caption with caption entities formatted as Markdown.
 
         Raises:
-            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler or nested
-                entities.
+            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler,
+                blockquote or nested entities.
 
         """
         return self._parse_markdown(self.caption, self.parse_caption_entities(), urled=False)
@@ -4499,11 +4681,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         Markdown in the same way the original message was formatted.
 
+        Warning:
+            |text_markdown|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as Markdown V2.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message caption with caption entities formatted as Markdown.
@@ -4520,22 +4708,26 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         Markdown. This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
-        Note:
-            * :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
-              Telegram for backward compatibility. You should use
-              :meth:`caption_markdown_v2_urled` instead.
+        Warning:
+            |text_markdown|
 
-            * |custom_emoji_formatting_note|
+        Note:
+            :tg-const:`telegram.constants.ParseMode.MARKDOWN` is a legacy mode, retained by
+            Telegram for backward compatibility. You should use
+            :meth:`caption_markdown_v2_urled` instead.
 
         .. versionchanged:: 20.5
             |custom_emoji_no_md1_support|
+
+        .. versionchanged:: NEXT.VERSION
+            |blockquote_no_md1_support|
 
         Returns:
             :obj:`str`: Message caption with caption entities formatted as Markdown.
 
         Raises:
-            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler or nested
-                entities.
+            :exc:`ValueError`: If the message contains underline, strikethrough, spoiler,
+                blockquote or nested entities.
 
         """
         return self._parse_markdown(self.caption, self.parse_caption_entities(), urled=True)
@@ -4548,11 +4740,17 @@ class Message(MaybeInaccessibleMessage):
         Use this if you want to retrieve the message caption with the caption entities formatted as
         Markdown. This also formats :attr:`telegram.MessageEntity.URL` as a hyperlink.
 
+        Warning:
+            |text_markdown|
+
         .. versionchanged:: 13.10
            Spoiler entities are now formatted as Markdown V2.
 
         .. versionchanged:: 20.3
            Custom emoji entities are now supported.
+
+        .. versionchanged:: NEXT.VERSION
+           Blockquote entities are now supported.
 
         Returns:
             :obj:`str`: Message caption with caption entities formatted as Markdown.
